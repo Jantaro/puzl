@@ -1,0 +1,9 @@
+A MYST-like puzl gaem by Sam and Cal Stepanian.
+
+Compile:
+  run compile.sh
+
+Dependencies:
+  SFML 1.6
+    libsfml-dev
+  gcc
