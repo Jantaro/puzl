@@ -12,6 +12,11 @@ int main()
 
   App.SetFramerateLimit(30);
 
+  sf::Image Image;
+  Image.LoadFromFile("test.png");
+  sf::Sprite Sprite;
+  Sprite.SetImage(Image);
+
   while (App.IsOpened()){
     sf::Event Event;
     while (App.GetEvent(Event)){
@@ -25,6 +30,7 @@ int main()
     }
 
     App.Clear();
+    App.Draw(Sprite);
     App.Display();
   }
 
