@@ -4,12 +4,27 @@ using sf::RenderWindow;
 #include <iostream>
 #include <utility>
 using std::pair;
+#include <vector>
+using std::vector;
 
 typedef pair<int, int> Coords;
 typedef pair<Coords, Coords> ClickBox;
 
+struct View{
+  Sprite sprite;
+  vector<ClickBox> boxen;
+};
+struct State{
+  View view;
+};
+
 bool inClickBox(const ClickBox&, const Coords&);
 ClickBox makeClickBox(int, int, int, int);
+void clickHandle(int);
+
+State state;
+View view1;
+View view2;
 
 int main()
 {
@@ -17,13 +32,22 @@ int main()
 
   App.SetFramerateLimit(30);
 
-  sf::Image Image;
-  Image.LoadFromFile("test.png");
-  sf::Sprite Sprite;
-  Sprite.SetImage(Image);
+  sf::Image Image_1;
+  sf::Image Image_2;
+  Image_1.LoadFromFile("test.png");
+  Image_2.LoadFromFile("test_2.png");
+  sf::Sprite Sprite_1;
+  sf::Sprite Sprite_2;
+  Sprite_1.SetImage(Image_1);
+  Sprite_2.SetImage(Image_2);
+
+  view1.sprite = Sprite_1;
+  view2.sprite = Sprite_2;
+  view1.boxen = vector<ClickBox>{makeClickBox(189, 175, 208, 194), makeClickBox(353, 182, 372, 201)};
+  view2.boxen = vector<ClickBox>{makeClickBox(224, 118, 266, 140), makeClickBox(152, 70, 163, 81)};
+  state.view = view1;
 
   Coords cursor;
-  ClickBox testBox = makeClickBox(189, 175, 208, 194);
 
   while (App.IsOpened()){
     sf::Event Event;
@@ -34,14 +58,17 @@ int main()
         cursor.first = Event.MouseButton.X;
         cursor.second = Event.MouseButton.Y;
         std::cout << cursor.first << " " << cursor.second << std::endl;
-        if (inClickBox(testBox, cursor)){
-          std::cout << "Good aim." << std::endl;
+        for(unsigned int i = 0; i != state.view.boxen.size(); ++i){
+          if (inClickBox(state.view.boxen[i], cursor)){
+            clickHandle(i);
+            break;
+          }
         }
       }
     }
 
     App.Clear();
-    App.Draw(Sprite);
+    App.Draw(state.view.sprite);
     App.Display();
   }
 
@@ -55,4 +82,15 @@ bool inClickBox(const ClickBox& box, const Coords& cursor){
 ClickBox makeClickBox(int x1, int y1, int x2, int y2){
   ClickBox box(pair<int, int>(x1, y1),pair<int, int>(x2, y2));
   return box;
+}
+
+void clickHandle(int boxID){
+  if (boxID == 0){
+    state.view = view1;
+    std::cout << "1" << std::endl;
+  }
+  else if (boxID == 1){
+    state.view = view2;
+    std::cout << "2" << std::endl;
+  }
 }
