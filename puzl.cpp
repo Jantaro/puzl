@@ -69,10 +69,8 @@ int main()
   ChangeView toView2 = makeChangeView(&view2);
   vector<Action*> act1 = {&toView1};
   vector<Action*> act2 = {&toView2};
-  view1.boxen = vector<ClickBox>{ClickBox(189, 175, 208, 194, act1),
-                                 ClickBox(353, 182, 372, 201, act2)};
-  view2.boxen = vector<ClickBox>{ClickBox(224, 118, 266, 140, act1),
-                                 ClickBox(152, 70, 163, 81, act2)};
+  view1.boxen = vector<ClickBox>{ClickBox(353, 182, 372, 201, act2)};
+  view2.boxen = vector<ClickBox>{ClickBox(224, 118, 266, 140, act1)};
   state.view = &view1;
 
   Coords cursor;
