@@ -20,13 +20,18 @@ struct ClickBox{
   Coords b;
   vector<Action*> effects;
 };
-struct View{
+struct ViewState{
   Sprite sprite;
   vector<ClickBox> boxen;
 };
+struct View{
+  void setState();
+  vector<ViewState> states;
+};
 struct State{
   View* view;
-  vector<pair<string, int> > values;
+  ViewState* viewState;
+  vector<pair<string, unsigned int> > values;
 };
 struct ChangeView: public Action{
   void act();
@@ -42,11 +47,13 @@ struct ChangeState: public Action{
 
 bool inClickBox(const ClickBox&, const Coords&);
 ChangeView makeChangeView(View*);
-ChangeState makeChangeState(string, int);
+ChangeState makeChangeState(string, unsigned int);
 
 State state;
-View view1;
-View view2;
+View pedestal;
+ViewState pedestal_button_up;
+ViewState pedestal_button_down;
+Sprite imageNotFound;
 
 int main()
 {
@@ -56,22 +63,30 @@ int main()
 
   sf::Image Image_1;
   sf::Image Image_2;
-  Image_1.LoadFromFile("test.png");
-  Image_2.LoadFromFile("test_2.png");
+  sf::Image notFound;
+  Image_1.LoadFromFile("pedestal_close_button-up.png");
+  Image_2.LoadFromFile("pedestal_close_button-down.png");
+  notFound.LoadFromFile("image_not_found.png");
   sf::Sprite Sprite_1;
   sf::Sprite Sprite_2;
   Sprite_1.SetImage(Image_1);
   Sprite_2.SetImage(Image_2);
+  imageNotFound.SetImage(notFound);
 
-  view1.sprite = Sprite_1;
-  view2.sprite = Sprite_2;
-  ChangeView toView1 = makeChangeView(&view1);
-  ChangeView toView2 = makeChangeView(&view2);
-  vector<Action*> act1 = {&toView1};
-  vector<Action*> act2 = {&toView2};
-  view1.boxen = vector<ClickBox>{ClickBox(353, 182, 372, 201, act2)};
-  view2.boxen = vector<ClickBox>{ClickBox(224, 118, 266, 140, act1)};
-  state.view = &view1;
+  pedestal_button_up.sprite = Sprite_1;
+  pedestal_button_down.sprite = Sprite_2;
+  ChangeState pushButton = makeChangeState("pedestal_button", 1);
+  ChangeState releaseButton = makeChangeState("pedestal_button", 0);
+  vector<Action*> act1 = {&pushButton};
+  vector<Action*> act2 = {&releaseButton};
+  pedestal_button_up.boxen = vector<ClickBox>{ClickBox(230, 64, 282, 189, act1)};
+  pedestal_button_down.boxen = vector<ClickBox>{ClickBox(230, 64, 282, 189, act2)};
+
+  pedestal.states.push_back(pedestal_button_up);
+  pedestal.states.push_back(pedestal_button_down);
+  state.view = &pedestal;
+  state.viewState = &pedestal_button_up;
+  state.values.push_back(pair<string, unsigned int>("pedestal_button", 0));
 
   Coords cursor;
 
@@ -84,9 +99,10 @@ int main()
         cursor.first = Event.MouseButton.X;
         cursor.second = Event.MouseButton.Y;
         std::cout << cursor.first << " " << cursor.second << std::endl;
-        for(unsigned int i = 0; i != state.view->boxen.size(); ++i){
-          if (inClickBox(state.view->boxen[i], cursor)){
-            state.view->boxen[i].doActions();
+        for(unsigned int i = 0; i != state.viewState->boxen.size(); ++i){
+          if (inClickBox(state.viewState->boxen[i], cursor)){
+            state.viewState->boxen[i].doActions();
+            state.view->setState();
             break;
           }
         }
@@ -94,7 +110,7 @@ int main()
     }
 
     App.Clear();
-    App.Draw(state.view->sprite);
+    App.Draw(state.viewState->sprite);
     App.Display();
   }
 
@@ -113,6 +129,16 @@ void ClickBox::doActions(){
   }
 }
 
+void View::setState(){
+  for(unsigned int i = 0; i != state.values.size(); ++i){
+    if (state.values[i].first == "pedestal_button"){
+      state.viewState = &states[state.values[i].second];
+    }
+  }
+  //state.viewState = imageNotFound;
+  //TODO: needs to error somehow if variable not found
+}
+
 //ChangeView::ChangeView(View* v): view(v){}
 
 ChangeView makeChangeView(View* v){
@@ -127,7 +153,7 @@ void ChangeView::act(){
 
 //ChangeState::ChangeState(string t, int v): target(t), value(v){}
 
-ChangeState makeChangeState(string t, int v){
+ChangeState makeChangeState(string t, unsigned int v){
   ChangeState cs;
   cs.target = t;
   cs.value = v;
@@ -141,4 +167,5 @@ void ChangeState::act(){
       break;
     }
   }
+  //TODO: needs to error somehow if it doesn't find the variable
 }
