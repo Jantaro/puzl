@@ -59,7 +59,7 @@ int main()
 {
   sf::RenderWindow App(sf::VideoMode(512, 512, 32), "puzl");
 
-  App.SetFramerateLimit(30);
+  App.SetFramerateLimit(60);
   App.ShowMouseCursor(false);
 
   sf::Image cursorImage;
