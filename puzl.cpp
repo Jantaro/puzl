@@ -60,6 +60,14 @@ int main()
   sf::RenderWindow App(sf::VideoMode(512, 512, 32), "puzl");
 
   App.SetFramerateLimit(30);
+  App.ShowMouseCursor(false);
+
+  sf::Image cursorImage;
+  cursorImage.LoadFromFile("cursor.png");
+  cursorImage.SetSmooth(false);
+  Sprite cursorDefault;
+  cursorDefault.SetImage(cursorImage);
+  cursorDefault.SetSubRect(sf::IntRect(0, 0, 16, 16));
 
   sf::Image Image_1;
   sf::Image Image_2;
@@ -67,8 +75,8 @@ int main()
   Image_1.LoadFromFile("pedestal_close_button-up.png");
   Image_2.LoadFromFile("pedestal_close_button-down.png");
   notFound.LoadFromFile("image_not_found.png");
-  sf::Sprite Sprite_1;
-  sf::Sprite Sprite_2;
+  Sprite Sprite_1;
+  Sprite Sprite_2;
   Sprite_1.SetImage(Image_1);
   Sprite_2.SetImage(Image_2);
   imageNotFound.SetImage(notFound);
@@ -98,7 +106,7 @@ int main()
       if (Event.Type == sf::Event::MouseButtonPressed){
         cursor.first = Event.MouseButton.X;
         cursor.second = Event.MouseButton.Y;
-        std::cout << cursor.first << " " << cursor.second << std::endl;
+        //std::cout << cursor.first << " " << cursor.second << std::endl;
         for(unsigned int i = 0; i != state.viewState->boxen.size(); ++i){
           if (inClickBox(state.viewState->boxen[i], cursor)){
             state.viewState->boxen[i].doActions();
@@ -109,8 +117,11 @@ int main()
       }
     }
 
+    //std::cout << App.GetInput().GetMouseX() << " " << App.GetInput().GetMouseY() << std::endl;
+    cursorDefault.SetPosition(App.GetInput().GetMouseX()-7, App.GetInput().GetMouseY()-7);
     App.Clear();
     App.Draw(state.viewState->sprite);
+    App.Draw(cursorDefault);
     App.Display();
   }
 
