@@ -2,6 +2,7 @@
 using sf::Sprite;
 using sf::RenderWindow;
 #include <iostream>
+using std::cerr;
 #include <utility>
 using std::pair;
 #include <vector>
@@ -9,16 +10,23 @@ using std::vector;
 using std::string;
 
 typedef pair<int, int> Coords;
-
+struct View; // forward declaration so Action knows about View
+enum ActionType {ChangeView, ChangeState};
 struct Action{
-  virtual void act() = 0;
+  void act();
+  enum ActionType type;
+  //viewData
+  View* view;
+  //stateData
+  string target;
+  unsigned int value;
 };
 struct ClickBox{
-  ClickBox(int, int, int, int, vector<Action*>);
+  ClickBox(int, int, int, int, vector<Action>);
   void doActions();
   Coords a;
   Coords b;
-  vector<Action*> effects;
+  vector<Action> effects;
 };
 struct ViewState{
   Sprite sprite;
@@ -33,27 +41,15 @@ struct State{
   ViewState* viewState;
   vector<pair<string, unsigned int> > values;
 };
-struct ChangeView: public Action{
-  void act();
-  //ChangeView(View*);
-  View* target;
-};
-struct ChangeState: public Action{
-  void act();
-  //ChangeState(string, int);
-  string target;
-  int value;
-};
 
 bool inClickBox(const ClickBox&, const Coords&);
-ChangeView makeChangeView(View*);
-ChangeState makeChangeState(string, unsigned int);
+Action makeChangeView(View*);
+Action makeChangeState(string, unsigned int);
 
 State state;
 View pedestal;
 ViewState pedestal_button_up;
 ViewState pedestal_button_down;
-Sprite imageNotFound;
 
 int main()
 {
@@ -65,30 +61,29 @@ int main()
   sf::Image cursorImage;
   cursorImage.LoadFromFile("cursor.png");
   cursorImage.SetSmooth(false);
-  Sprite cursorDefault;
-  cursorDefault.SetImage(cursorImage);
-  cursorDefault.SetSubRect(sf::IntRect(0, 0, 16, 16));
+  Sprite cursorSet;
+  Sprite cursorPointer;
+  Sprite cursorAction;
+  cursorPointer.SetImage(cursorImage);
+  cursorAction.SetImage(cursorImage);
+  cursorPointer.SetSubRect(sf::IntRect(0, 0, 16, 16));
+  cursorAction.SetSubRect(sf::IntRect(15, 0, 32, 16));
 
   sf::Image Image_1;
   sf::Image Image_2;
-  sf::Image notFound;
   Image_1.LoadFromFile("pedestal_close_button-up.png");
   Image_2.LoadFromFile("pedestal_close_button-down.png");
-  notFound.LoadFromFile("image_not_found.png");
   Sprite Sprite_1;
   Sprite Sprite_2;
   Sprite_1.SetImage(Image_1);
   Sprite_2.SetImage(Image_2);
-  imageNotFound.SetImage(notFound);
 
   pedestal_button_up.sprite = Sprite_1;
   pedestal_button_down.sprite = Sprite_2;
-  ChangeState pushButton = makeChangeState("pedestal_button", 1);
-  ChangeState releaseButton = makeChangeState("pedestal_button", 0);
-  vector<Action*> act1 = {&pushButton};
-  vector<Action*> act2 = {&releaseButton};
-  pedestal_button_up.boxen = vector<ClickBox>{ClickBox(230, 64, 282, 189, act1)};
-  pedestal_button_down.boxen = vector<ClickBox>{ClickBox(230, 64, 282, 189, act2)};
+  vector<Action> pushButton = {makeChangeState("pedestal_button", 1)};
+  vector<Action> releaseButton = {makeChangeState("pedestal_button", 0)};
+  pedestal_button_up.boxen = vector<ClickBox>{ClickBox(230, 64, 282, 189, pushButton)};
+  pedestal_button_down.boxen = vector<ClickBox>{ClickBox(230, 64, 282, 189, releaseButton)};
 
   pedestal.states.push_back(pedestal_button_up);
   pedestal.states.push_back(pedestal_button_down);
@@ -99,29 +94,32 @@ int main()
   Coords cursor;
 
   while (App.IsOpened()){
+    cursorSet = cursorPointer;
+    cursor.first = App.GetInput().GetMouseX()-7;
+    cursor.second = App.GetInput().GetMouseY()-7;
+    ClickBox box(0,0,0,0,vector<Action>());
+    for(unsigned int i = 0; i != state.viewState->boxen.size(); ++i){
+      if (inClickBox(state.viewState->boxen[i], cursor)){
+        cursorSet = cursorAction;
+        box = state.viewState->boxen[i];
+        break;
+      }
+    }
     sf::Event Event;
     while (App.GetEvent(Event)){
       if (Event.Type == sf::Event::Closed)
         App.Close();
       if (Event.Type == sf::Event::MouseButtonPressed){
-        cursor.first = Event.MouseButton.X;
-        cursor.second = Event.MouseButton.Y;
-        //std::cout << cursor.first << " " << cursor.second << std::endl;
-        for(unsigned int i = 0; i != state.viewState->boxen.size(); ++i){
-          if (inClickBox(state.viewState->boxen[i], cursor)){
-            state.viewState->boxen[i].doActions();
-            state.view->setState();
-            break;
-          }
-        }
+        box.doActions();
+        state.view->setState();
       }
     }
 
     //std::cout << App.GetInput().GetMouseX() << " " << App.GetInput().GetMouseY() << std::endl;
-    cursorDefault.SetPosition(App.GetInput().GetMouseX()-7, App.GetInput().GetMouseY()-7);
+    cursorSet.SetPosition(cursor.first, cursor.second);
     App.Clear();
     App.Draw(state.viewState->sprite);
-    App.Draw(cursorDefault);
+    App.Draw(cursorSet);
     App.Display();
   }
 
@@ -132,51 +130,49 @@ bool inClickBox(const ClickBox& box, const Coords& cursor){
   return cursor.first >= box.a.first && cursor.second >= box.a.second && cursor.first <= box.b.first && cursor.second <= box.b.second;
 }
 
-ClickBox::ClickBox(int x1, int y1, int x2, int y2, vector<Action*> es): a(x1, y1), b(x2, y2), effects(es){}
+ClickBox::ClickBox(int x1, int y1, int x2, int y2, vector<Action> es): a(x1, y1), b(x2, y2), effects(es){}
 
 void ClickBox::doActions(){
   for(unsigned int i = 0; i != effects.size(); ++i){
-    effects[i]->act();
+    effects[i].act();
   }
 }
 
-void View::setState(){
+void View::setState(){ //chooses which ViewState with the value of the "pedestal_button" variable
   for(unsigned int i = 0; i != state.values.size(); ++i){
-    if (state.values[i].first == "pedestal_button"){
+    if (state.values[i].first == "pedestal_button"){ // TODO hardcoded
       state.viewState = &states[state.values[i].second];
     }
   }
-  //state.viewState = imageNotFound;
   //TODO: needs to error somehow if variable not found
 }
 
-//ChangeView::ChangeView(View* v): view(v){}
-
-ChangeView makeChangeView(View* v){
-  ChangeView cv;
-  cv.target = v;
+Action makeChangeView(View* v){
+  Action cv;
+  cv.type = ChangeView;
+  cv.view = v;
   return cv;
 }
 
-void ChangeView::act(){
-  state.view = target;
-}
-
-//ChangeState::ChangeState(string t, int v): target(t), value(v){}
-
-ChangeState makeChangeState(string t, unsigned int v){
-  ChangeState cs;
+Action makeChangeState(string t, unsigned int v){
+  Action cs;
+  cs.type = ChangeState;
   cs.target = t;
   cs.value = v;
   return cs;
 }
 
-void ChangeState::act(){
-  for(unsigned int i = 0; i != state.values.size(); ++i){
-    if (state.values[i].first == target){
-      state.values[i].second = value;
-      break;
-    }
+void Action::act(){
+  switch (type) {
+    case ChangeView  : {state.view = view; break;}
+    case ChangeState :
+      {for(unsigned int i = 0; i != state.values.size(); ++i){
+         if (state.values[i].first == target){
+           state.values[i].second = value;
+           break;
+         }
+       } break;
+      }
+    default : {cerr << "invalid Action type!";}
   }
-  //TODO: needs to error somehow if it doesn't find the variable
 }
