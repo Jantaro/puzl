@@ -1,46 +1,14 @@
-#include <SFML/Graphics.hpp>
-using sf::Sprite;
-using sf::RenderWindow;
+#include "data.h"
 #include <iostream>
 using std::cerr;
-#include <utility>
+//from <SFML/Graphics.hpp>
+using sf::Sprite;
+using sf::RenderWindow;
+//from <utility>
 using std::pair;
-#include <vector>
+//from <vector>
 using std::vector;
 using std::string;
-
-typedef pair<int, int> Coords;
-struct View; // forward declaration so Action knows about View
-enum ActionType {ChangeView, ChangeState};
-struct Action{
-  void act();
-  enum ActionType type;
-  //viewData
-  View* view;
-  //stateData
-  string target;
-  unsigned int value;
-};
-struct ClickBox{
-  ClickBox(int, int, int, int, vector<Action>);
-  void doActions();
-  Coords a;
-  Coords b;
-  vector<Action> effects;
-};
-struct ViewState{
-  Sprite sprite;
-  vector<ClickBox> boxen;
-};
-struct View{
-  void setState();
-  vector<ViewState> states;
-};
-struct State{
-  View* view;
-  ViewState* viewState;
-  vector<pair<string, unsigned int> > values;
-};
 
 bool inClickBox(const ClickBox&, const Coords&);
 Action makeChangeView(View*);
