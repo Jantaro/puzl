@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <utility> //for std::pair
 #include <vector>
+#include <string>
 
 typedef std::pair<int, int> Coords;
 struct View; // forward declaration so Action knows about View

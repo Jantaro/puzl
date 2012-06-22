@@ -1,4 +1,4 @@
-#include "data.h"
+#include "data.hpp"
 #include <iostream>
 using std::cerr;
 //from <SFML/Graphics.hpp>
